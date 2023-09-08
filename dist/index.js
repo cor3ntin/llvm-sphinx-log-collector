@@ -2750,25 +2750,43 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.run = void 0;
 const core = __importStar(__nccwpck_require__(186));
-const wait_1 = __nccwpck_require__(259);
-/**
- * The main function for the action.
- * @returns {Promise<void>} Resolves when the action is complete.
- */
+const fs_1 = __importDefault(__nccwpck_require__(147));
+function readFile(path) {
+    let annotations = [];
+    fs_1.default.readFile(path, 'utf8', (err, data) => {
+        if (err) {
+            console.error(err);
+            throw Error('Unable to read sphinx log file');
+        }
+        const lines = data.split('\n');
+        let regexp = /(.+):(\d+):\s*(WARNING|ERROR):\s*(.*)\s*/;
+        lines.forEach(line => {
+            let match = line.match(regexp);
+            if (match) {
+                annotations.push({
+                    path: match[1],
+                    line: +match[2],
+                    kind: match[3],
+                    message: match[4]
+                });
+            }
+        });
+    });
+    return annotations;
+}
 async function run() {
+    const path = core.getInput('path');
     try {
-        const ms = core.getInput('milliseconds');
-        // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
-        core.debug(`Waiting ${ms} milliseconds ...`);
-        // Log the current timestamp, wait, then log the new timestamp
-        core.debug(new Date().toTimeString());
-        await (0, wait_1.wait)(parseInt(ms, 10));
-        core.debug(new Date().toTimeString());
-        // Set outputs for other workflow steps to use
-        core.setOutput('time', new Date().toTimeString());
+        const annotations = readFile(path);
+        annotations.forEach(annotation => {
+            core.debug(`!${annotation.path}, ${annotation.line}, ${annotation.kind}\n${annotation.message}`);
+        });
     }
     catch (error) {
         // Fail the workflow run if an error occurs
@@ -2779,31 +2797,6 @@ async function run() {
 exports.run = run;
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 run();
-
-
-/***/ }),
-
-/***/ 259:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.wait = void 0;
-/**
- * Wait for a number of milliseconds.
- * @param milliseconds The number of milliseconds to wait.
- * @returns {Promise<string>} Resolves with 'done!' after the wait is over.
- */
-async function wait(milliseconds) {
-    return new Promise(resolve => {
-        if (isNaN(milliseconds)) {
-            throw new Error('milliseconds not a number');
-        }
-        setTimeout(() => resolve('done!'), milliseconds);
-    });
-}
-exports.wait = wait;
 
 
 /***/ }),

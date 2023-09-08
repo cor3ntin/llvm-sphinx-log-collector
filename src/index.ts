@@ -1,24 +1,68 @@
 import * as core from '@actions/core'
-import { wait } from './wait'
+import fs from 'fs'
+import { Annotation } from './types'
+import { closeStatusCheck, createStatusCheck, updateStatusCheck } from './statusCheck'
 
-/**
- * The main function for the action.
- * @returns {Promise<void>} Resolves when the action is complete.
- */
+function toGithubSeverity(severity: string) {
+  return severity == 'ERROR'? 'failure' : 'warning'
+}
+
+function readShphixLogFile(path: string): Array<Annotation> {
+  let annotations: Array<Annotation> = []
+  core.debug(path)
+  const data = fs.readFileSync(path, 'utf8')
+  const lines = data.split('\n')
+  let regexp: RegExp = /(.+):(\d+):\s*(WARNING|ERROR):\s*(.*)\s*/
+  lines.forEach(line => {
+    let match = line.match(regexp)
+    if (match) {
+      annotations.push({
+        path: match[1],
+        line: +match[2],
+        severity: toGithubSeverity(match[3]),
+        message: match[4]
+      })
+    }
+  })
+  return annotations
+}
+
 export async function run(): Promise<void> {
+  const checkName = core.getInput('name')
+  const path: string = core.getInput('path')
+  const githubToken: string = core.getInput('github-token')
+
   try {
-    const ms: string = core.getInput('milliseconds')
+    const annotations = readShphixLogFile(path)
+    annotations.forEach(annotation => {
+      core.debug(
+        `!${annotation.path}, ${annotation.line}, ${annotation.severity}, ${annotation.message}`
+      )
+    })
 
-    // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
-    core.debug(`Waiting ${ms} milliseconds ...`)
+    let checkId = 0;
+    if(githubToken) {
+      checkId = await createStatusCheck(githubToken, checkName)
+        .catch(() => {
+          throw new Error('There has been an issue creating the status check. Does the action have the right permissions?')
+        })
 
-    // Log the current timestamp, wait, then log the new timestamp
-    core.debug(new Date().toTimeString())
-    await wait(parseInt(ms, 10))
-    core.debug(new Date().toTimeString())
+      await updateStatusCheck(
+          githubToken,
+          checkId,
+          checkName,
+          annotations
+        )
 
-    // Set outputs for other workflow steps to use
-    core.setOutput('time', new Date().toTimeString())
+      let shouldFail: boolean = (annotations.map(ann => ann.severity).find(s => s == "failure") != undefined);
+
+      await closeStatusCheck(githubToken, {
+          checkId,
+          checkName: checkName,
+          createSummary: false,
+          shouldFail: shouldFail
+        })
+    }
   } catch (error) {
     // Fail the workflow run if an error occurs
     if (error instanceof Error) core.setFailed(error.message)

@@ -1,18 +1,18 @@
-name: 'The name of your action here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'Sphinx Lint upload'
+description: 'Create Annotations from sphinx logs'
+author: 'Corentin Jabot'
 
 # Define your inputs here.
 inputs:
-  milliseconds:
-    description: 'Your input description here'
+  path:
+    description: 'Path of the sphinx logs'
     required: true
-    default: '1000'
-
-# Define your outputs here.
-outputs:
-  time:
-    description: 'Your output description here'
+  github-token:
+    description: GitHub token for accessing the API
+    default: ${{ github.token }}
+  name:
+    description: 'name of the check'
+    default: "Sphinx Lint"
 
 runs:
   using: node16

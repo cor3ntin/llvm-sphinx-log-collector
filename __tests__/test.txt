@@ -1,0 +1,10 @@
+/home/cor3ntin/dev/compilers/LLVM/llvm-project/clang/docs/ReleaseNotes.rst:171: WARNING: Title underline too short.
+
+Bug Fixes in This Version
+----------------------
+/home/cor3ntin/dev/compilers/LLVM/llvm-project/clang/docs/ReleaseNotes.rst:171: WARNING: Title underline too short.
+
+Bug Fixes in This Version
+----------------------
+/home/cor3ntin/dev/compilers/LLVM/llvm-project/clang/docs/ReleaseNotes.rst:274: ERROR: Unexpected indentation.
+/home/cor3ntin/dev/compilers/LLVM/llvm-project/clang/docs/ReleaseNotes.rst:176: ERROR: Unknown target name: "#42535 <https://github.com/llvm/llvm-project/issues/42535".
